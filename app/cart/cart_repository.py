@@ -1,42 +1,49 @@
 import logging
-from typing import Optional, Dict
+from typing import Dict, Any
 
 logger = logging.getLogger(__name__)
 
 class CartRepository:
     """
-    Repository for handling database interactions for cart state
+    Repository class for managing shopping cart persistence.
     """
 
-    def __init__(self, db_connection: Any):
-        self.db_connection = db_connection
-
-    def save(self, user_id: str, cart: Dict[str, Any]) -> None:
+    def __init__(self, db):
         """
-        Save the cart state to the database.
+        Initialize the repository with a database connection.
 
-        :param user_id: Unique identifier for the user
-        :param cart: Cart details to be saved
+        :param db: Database connection or ORM instance
         """
+        self.db = db
+
+    def save_cart(self, user_id: str, cart_data: Dict[str, Any]) -> None:
+        """
+        Save shopping cart details to the database.
+
+        :param user_id: The unique identifier of the user
+        :param cart_data: The shopping cart data to be saved
+        :raises Exception: If database operation fails
+        """
+        logger.info(f"Saving cart to database for user: {user_id}")
         try:
-            logger.debug(f"Persisting cart state for user_id={user_id} with cart={cart}")
-            # Example persistence code
-            self.db_connection.execute("INSERT INTO user_cart (user_id, cart_data) VALUES (?, ?) ON DUPLICATE KEY UPDATE cart_data=?", (user_id, cart, cart))
+            self.db.save("cart", {"user_id": user_id, "data": cart_data})
+            logger.info("Cart saved successfully to database.")
         except Exception as e:
-            logger.error(f"Error saving cart to database for user_id={user_id}: {str(e)}")
+            logger.error(f"Error saving cart for user {user_id}: {e}")
             raise
 
-    def retrieve(self, user_id: str) -> Optional[Dict[str, Any]]:
+    def get_cart(self, user_id: str) -> Dict[str, Any]:
         """
-        Retrieve cart state from the database.
+        Retrieve shopping cart details from the database.
 
-        :param user_id: Unique identifier for the user
-        :return: Cart details or None
+        :param user_id: The unique identifier of the user
+        :return: The shopping cart data
+        :raises Exception: If database operation fails
         """
+        logger.info(f"Retrieving cart from database for user: {user_id}")
         try:
-            logger.debug(f"Fetching cart state from database for user_id={user_id}")
-            result = self.db_connection.execute("SELECT cart_data FROM user_cart WHERE user_id=?", (user_id,))
-            return result.fetchone()
+            result = self.db.get("cart", {"user_id": user_id})
+            return result["data"]
         except Exception as e:
-            logger.error(f"Error retrieving cart from database for user_id={user_id}: {str(e)}")
+            logger.error(f"Error retrieving cart for user {user_id}: {e}")
             raise
